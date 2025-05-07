@@ -1,5 +1,5 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit, OnDestroy, PLATFORM_ID, Inject } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { GuildService, Guild } from '../guild.service';
 import { FormsModule } from '@angular/forms';
 import { CachedImgComponent } from '../../shared/cached-img/cached-img.component';
@@ -15,6 +15,7 @@ import { ImageCacheService } from '../../shared/image-cache.service';
 export class GuildSidebarComponent implements OnInit, OnDestroy {
   private guildService = inject(GuildService);
   private imageCache = inject(ImageCacheService);
+  private isBrowser: boolean;
 
   showCreateGuildModal = false;
   newGuildName = '';
@@ -22,6 +23,10 @@ export class GuildSidebarComponent implements OnInit, OnDestroy {
   guildImageFile: File | null = null;
   guildImagePreview: string | null = null;
   uploading = false;
+
+  constructor(@Inject(PLATFORM_ID) platformId: Object) {
+    this.isBrowser = isPlatformBrowser(platformId);
+  }
 
   private focusHandler = () => {
     // Refresh guild state when window regains focus
@@ -32,13 +37,17 @@ export class GuildSidebarComponent implements OnInit, OnDestroy {
   };
 
   ngOnInit() {
-    // Add focus event listener
-    window.addEventListener('focus', this.focusHandler);
+    // Only add event listener in browser environment
+    if (this.isBrowser) {
+      window.addEventListener('focus', this.focusHandler);
+    }
   }
 
   ngOnDestroy() {
-    // Remove focus event listener
-    window.removeEventListener('focus', this.focusHandler);
+    // Only remove event listener in browser environment
+    if (this.isBrowser) {
+      window.removeEventListener('focus', this.focusHandler);
+    }
   }
 
   get guilds() {

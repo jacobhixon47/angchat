@@ -1,5 +1,5 @@
-import { Component, inject, signal, Output, EventEmitter } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, signal, Output, EventEmitter, PLATFORM_ID, Inject } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from 'src/app/core/auth.service';
 import { supabase } from 'src/app/core/supabase.client';
@@ -154,6 +154,8 @@ export class ProfileComponent {
 
   private auth = inject(AuthService);
   private imageCache = inject(ImageCacheService);
+  private isBrowser: boolean;
+
   isOpen = signal<boolean>(false);
   user = this.auth.user;
   error = signal<string | null>(null);
@@ -164,9 +166,16 @@ export class ProfileComponent {
   uploading = false;
   updating = false;
 
-  constructor() {}
+  constructor(@Inject(PLATFORM_ID) platformId: Object) {
+    this.isBrowser = isPlatformBrowser(platformId);
+  }
 
   async open() {
+    // Skip server-side operations
+    if (!this.isBrowser) {
+      return;
+    }
+
     try {
       // Refresh user data from the server before opening the modal
       const { data: sessionData } = await supabase.auth.getSession();
@@ -300,6 +309,10 @@ export class ProfileComponent {
 
   // Auto-crop the image to a square from the center
   private autoCropImage(file: File): Promise<File> {
+    if (!this.isBrowser) {
+      return Promise.reject(new Error('Image cropping is not available during server-side rendering'));
+    }
+
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (event) => {
