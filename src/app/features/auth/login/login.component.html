@@ -1,0 +1,46 @@
+<div class="w-full max-w-xs mx-auto">
+  <img src="assets/logo.png" alt="logo" class="h-25 w-auto mx-auto" />
+  <div class="h-8"></div>
+
+  <!-- Verification success message -->
+  <div *ngIf="verificationSuccess()" class="mb-4 bg-green-50 border border-green-200 text-green-800 p-4 rounded">
+    <p>
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+        <path
+          fill-rule="evenodd"
+          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+          clip-rule="evenodd"
+        />
+      </svg>
+      <strong>Email verified!</strong>
+      <span *ngIf="autoLoginInProgress()">Signing you in automatically...</span>
+      <span *ngIf="!autoLoginInProgress()">You can now log in to your account.</span>
+    </p>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4" *ngIf="!autoLoginInProgress()">
+    <input
+      formControlName="email"
+      type="email"
+      placeholder="Email"
+      class="w-full border rounded px-3 py-2 bg-gray-800 border-gray-700 text-white"
+    />
+    <input
+      formControlName="password"
+      type="password"
+      placeholder="Password"
+      class="w-full border rounded px-3 py-2 bg-gray-800 border-gray-700 text-white"
+    />
+    <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded">Log In</button>
+    <p *ngIf="error()" class="text-red-500">{{ error() }}</p>
+    <p class="text-sm text-center">
+      Don't have an account?
+      <a routerLink="/register" class="text-blue-600 underline">Register</a>
+    </p>
+  </form>
+
+  <!-- Loading indicator during auto-login -->
+  <div *ngIf="autoLoginInProgress()" class="mt-4 flex justify-center">
+    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+  </div>
+</div>

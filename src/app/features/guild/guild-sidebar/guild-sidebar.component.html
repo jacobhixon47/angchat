@@ -1,0 +1,151 @@
+<div class="flex flex-col h-full bg-gray-900 w-20 border-r border-gray-800">
+  <!-- Guild list + add button -->
+  <div class="flex-1 overflow-y-auto p-2 flex flex-col items-center space-y-3">
+    <ng-container *ngFor="let guild of guilds()">
+      <div class="flex items-center w-full justify-center group cursor-pointer" (click)="selectGuild(guild)">
+        <!-- Guild icon -->
+        <div
+          [ngClass]="{
+            'bg-purple-600 hover:bg-purple-500 transition-colors': guild.id === activeGuild()?.id && !guild.image_url,
+            'bg-gray-800 hover:bg-purple-500 transition-colors': guild.id !== activeGuild()?.id && !guild.image_url,
+            'bg-gray-900': guild.image_url
+          }"
+          class="h-12 w-12 rounded-full flex items-center justify-center text-white font-bold overflow-hidden"
+          [title]="guild.name"
+        >
+          <cached-img
+            *ngIf="guild.image_url"
+            [src]="guild.image_url"
+            [alt]="guild.name"
+            [fallbackText]="guild.name"
+            [class]="'h-full w-full object-cover'"
+          >
+            <ng-template>
+              <div class="h-full w-full bg-gray-800 flex items-center justify-center">
+                <span class="text-2xl text-white font-bold">{{ guild.name.charAt(0).toUpperCase() }}</span>
+              </div>
+            </ng-template>
+          </cached-img>
+
+          <!-- Display first letter when no image -->
+          <span *ngIf="!guild.image_url" class="text-2xl text-white font-bold">{{
+            guild.name.charAt(0).toUpperCase()
+          }}</span>
+        </div>
+        <!-- Indicator bar (not overlaying icon) -->
+        <div *ngIf="guild.id === activeGuild()?.id" class="ml-2 h-8 w-2 rounded bg-purple-400"></div>
+      </div>
+    </ng-container>
+    <!-- Add guild button, same alignment as guilds -->
+    <div class="flex items-center w-full justify-center pt-2">
+      <button
+        (click)="openCreateGuildModal()"
+        class="h-12 w-12 rounded-full bg-gray-800 flex items-center justify-center text-white cursor-pointer hover:bg-gray-700 transition-colors"
+        title="Create a new guild"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Create guild modal -->
+<div *ngIf="showCreateGuildModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-gray-800 p-6 rounded-lg w-96">
+    <h2 class="text-xl font-bold text-white mb-4">Create a New Guild</h2>
+
+    <div class="space-y-4">
+      <!-- Guild Image -->
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-2">Guild Image (optional)</label>
+        <div class="flex items-center space-x-4">
+          <div class="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center overflow-hidden">
+            <!-- Show loading spinner when uploading -->
+            <div *ngIf="uploading" class="flex items-center justify-center w-full h-full">
+              <svg
+                class="animate-spin h-8 w-8 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            </div>
+            <!-- Show image preview when available -->
+            <img
+              *ngIf="guildImagePreview && !uploading"
+              [src]="guildImagePreview"
+              alt="Guild image"
+              class="w-full h-full object-cover"
+            />
+            <!-- Show placeholder when no image and not uploading -->
+            <span *ngIf="!guildImagePreview && !uploading" class="text-2xl text-white">{{
+              newGuildName.charAt(0).toUpperCase()
+            }}</span>
+          </div>
+          <div>
+            <label
+              class="px-3 py-2 bg-gray-700 text-white rounded cursor-pointer hover:bg-gray-600"
+              [class.opacity-50]="uploading"
+              [class.cursor-not-allowed]="uploading"
+            >
+              <span>Upload Image</span>
+              <input
+                type="file"
+                class="hidden"
+                accept="image/*"
+                (change)="handleGuildImageSelected($event)"
+                [disabled]="uploading"
+              />
+            </label>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">Recommended: 128x128px or larger square image</p>
+      </div>
+
+      <div>
+        <label for="guildName" class="block text-sm font-medium text-gray-300 mb-1">Guild Name</label>
+        <input
+          type="text"
+          id="guildName"
+          [(ngModel)]="newGuildName"
+          class="w-full border border-gray-600 rounded px-3 py-2 bg-gray-700 text-white"
+          placeholder="My Awesome Guild"
+        />
+      </div>
+
+      <div>
+        <label for="guildDescription" class="block text-sm font-medium text-gray-300 mb-1"
+          >Description (optional)</label
+        >
+        <textarea
+          id="guildDescription"
+          [(ngModel)]="newGuildDescription"
+          class="w-full border border-gray-600 rounded px-3 py-2 bg-gray-700 text-white"
+          placeholder="What's this guild about?"
+          rows="3"
+        ></textarea>
+      </div>
+
+      <div class="flex justify-between mt-6">
+        <button (click)="closeCreateGuildModal()" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500">
+          Cancel
+        </button>
+        <button
+          (click)="createGuild()"
+          class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-500"
+          [disabled]="!newGuildName.trim()"
+        >
+          Create
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

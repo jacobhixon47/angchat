@@ -5,7 +5,11 @@ import { appConfig } from './app.config';
 const serverConfig: ApplicationConfig = {
   providers: [
     provideServerRendering(),
-  ]
+    {
+      provide: 'isServer',
+      useValue: true,
+    },
+  ],
 };
 
 export const config = mergeApplicationConfig(appConfig, serverConfig);

@@ -1,0 +1,77 @@
+<div class="p-4 space-y-2 h-[75vh] overflow-auto bg-gray-900">
+  <!-- Loading indicator -->
+  <div *ngIf="isLoading()" class="text-center py-4">
+    <div class="flex items-center justify-center space-x-2">
+      <svg
+        class="animate-spin h-5 w-5 text-purple-500"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        ></path>
+      </svg>
+      <span class="text-gray-400">Loading messages...</span>
+    </div>
+  </div>
+
+  <!-- No messages state -->
+  <div *ngIf="!isLoading() && messages().length === 0" class="text-center text-gray-500 py-4">
+    No messages yet. Start the conversation!
+  </div>
+
+  <!-- Message list -->
+  <div *ngFor="let m of messages()" class="flex items-start space-x-3 py-2">
+    <!-- User avatar with blank loading state -->
+    <div class="h-10 w-10 rounded-full flex items-center justify-center overflow-hidden bg-gray-700">
+      <div *ngIf="!isProfileLoaded(m.user_id)" class="h-full w-full"></div>
+      <cached-img
+        *ngIf="isProfileLoaded(m.user_id)"
+        [src]="getAvatarUrlForMessage(m)"
+        [alt]="getUsernameForMessage(m)"
+        [fallbackText]="getUsernameForMessage(m)"
+        [class]="'h-full w-full object-cover'"
+      >
+        <ng-template>
+          <div class="h-full w-full bg-purple-700 flex items-center justify-center">
+            <span class="text-lg text-white font-bold">{{ getUsernameForMessage(m)[0]?.toUpperCase() || '?' }}</span>
+          </div>
+        </ng-template>
+      </cached-img>
+    </div>
+    <div class="flex-1">
+      <!-- Message header with username and timestamp -->
+      <div class="flex items-center space-x-2">
+        <!-- Username with loading state -->
+        <span *ngIf="!isProfileLoaded(m.user_id)" class="bg-gray-700 rounded h-5 w-24 animate-pulse"></span>
+        <span *ngIf="isProfileLoaded(m.user_id)" class="font-semibold text-white text-sm">{{
+          isOwn(m) ? 'You' : getUsernameForMessage(m)
+        }}</span>
+
+        <!-- Timestamp with loading state -->
+        <span *ngIf="!isProfileLoaded(m.user_id)" class="bg-gray-700 rounded h-4 w-16 animate-pulse"></span>
+        <span *ngIf="isProfileLoaded(m.user_id)" class="text-xs text-gray-400">{{
+          m?.inserted_at ? (m.inserted_at | date : 'shortTime') : 'just now'
+        }}</span>
+      </div>
+
+      <!-- Message content with loading state -->
+      <div *ngIf="!isProfileLoaded(m.user_id)" class="mt-1">
+        <!-- Always show at least one line for every message -->
+        <div class="bg-gray-700 rounded h-4 w-1/5 max-w-md animate-pulse"></div>
+        <!-- Add a second line for longer messages - safe check for undefined content -->
+        <div
+          *ngIf="m?.content && m.content.length > 50"
+          class="bg-gray-700 rounded h-4 w-2/5 max-w-xs animate-pulse mt-1"
+        ></div>
+      </div>
+      <div *ngIf="isProfileLoaded(m.user_id)" class="text-gray-200 text-base whitespace-pre-line">
+        {{ m?.content || '' }}
+      </div>
+    </div>
+  </div>
+</div>

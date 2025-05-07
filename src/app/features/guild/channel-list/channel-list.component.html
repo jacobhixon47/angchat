@@ -1,0 +1,435 @@
+<div class="flex flex-col h-full bg-gray-800 w-60 border-r border-gray-700">
+  <!-- Guild header -->
+  <div class="p-4 border-b border-gray-700">
+    <div class="flex items-start">
+      <!-- Guild avatar - vertically centered with name and description -->
+      <div class="h-10 w-10 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden mt-1">
+        <cached-img
+          [src]="activeGuild()?.image_url ?? null"
+          [alt]="activeGuild()?.name ?? ''"
+          [fallbackText]="activeGuild()?.name ?? ''"
+        >
+          <ng-template>
+            <div class="h-full w-full bg-gray-700 flex items-center justify-center">
+              <span class="text-xl text-white font-bold">{{ (activeGuild()?.name || '?')[0].toUpperCase() }}</span>
+            </div>
+          </ng-template>
+        </cached-img>
+      </div>
+
+      <!-- Name and description column -->
+      <div class="ml-3 flex-1">
+        <div class="flex items-center justify-between">
+          <!-- Guild name -->
+          <h2 class="text-xl font-bold text-white truncate">
+            {{ activeGuild()?.name || 'Select a Guild' }}
+          </h2>
+
+          <!-- Settings button - only visible to guild owners -->
+          <button
+            *ngIf="isGuildOwner()"
+            (click)="openGuildSettingsModal()"
+            class="h-6 w-6 ml-2 text-gray-400 hover:text-white flex-shrink-0"
+            title="Guild Settings"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Guild description - now under the name -->
+        <p class="text-sm text-gray-400 truncate mt-1">{{ activeGuild()?.description || '' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Channel list -->
+  <div class="flex-1 overflow-y-auto">
+    <div class="p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-xs uppercase text-gray-500 font-bold">Channels</h3>
+
+        <!-- Refresh button - only visible to guild owner -->
+        <button
+          *ngIf="isGuildOwner() && activeGuild()"
+          (click)="refreshChannels()"
+          class="h-4 w-4 text-gray-500 hover:text-white"
+          title="Refresh channels"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+        </button>
+      </div>
+
+      @if (!activeGuild()) {
+      <div class="text-gray-500 text-sm">Select a guild to view channels</div>
+      }
+
+      <!-- Loading indicator -->
+      @if (activeGuild() && isLoadingChannels && channels().length === 0) {
+      <div class="text-gray-500 text-sm mb-4">
+        <div class="flex items-center space-x-2">
+          <svg
+            class="animate-spin h-4 w-4 text-purple-500"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          <span>Loading channels...</span>
+        </div>
+      </div>
+      } @if (activeGuild() && !isLoadingChannels && channels().length === 0) {
+      <div class="text-gray-500 text-sm mb-4">
+        <div class="flex items-center justify-between mb-2">
+          <span>No channels available</span>
+          @if (isGuildOwner()) {
+          <button
+            (click)="refreshChannels()"
+            class="px-3 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-500 flex items-center"
+            [disabled]="isRefreshing"
+          >
+            @if (!isRefreshing) {<span>Create #general</span>} @if (isRefreshing) {<span>Creating...</span>}
+          </button>
+          }
+        </div>
+        @if (isGuildOwner()) {
+        <p class="text-xs text-gray-500 mt-1">
+          As the guild owner, you can create the default #general channel by clicking the button.
+        </p>
+        } @else {
+        <p class="text-xs text-gray-500 mt-1">The guild owner needs to create a channel first.</p>
+        }
+      </div>
+      } @for (channel of channels(); track channel.id) {
+      <div
+        (click)="selectChannel(channel)"
+        class="flex items-center py-1 px-2 rounded cursor-pointer mb-1"
+        [class.bg-gray-700]="channel.id === activeChannel()?.id"
+        [class.text-white]="channel.id === activeChannel()?.id"
+        [class.text-gray-400]="channel.id !== activeChannel()?.id"
+        [class.hover:bg-gray-700]="channel.id !== activeChannel()?.id"
+      >
+        <span class="mr-2">#</span>
+        <span class="truncate">{{ channel.name }}</span>
+      </div>
+      }
+    </div>
+  </div>
+
+  <!-- Create channel button -->
+  <div class="p-4 border-t border-gray-700">
+    @if (activeGuild() && isGuildOwner()) {
+    <button
+      (click)="openCreateChannelModal()"
+      class="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center justify-center"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-4 w-4 mr-2"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      Create Channel
+    </button>
+    }
+  </div>
+</div>
+
+<!-- Create channel modal -->
+@if (showCreateChannelModal) {
+<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-gray-800 p-6 rounded-lg w-96">
+    <h2 class="text-xl font-bold text-white mb-4">Create a New Channel</h2>
+
+    <div class="space-y-4">
+      <div>
+        <label for="channelName" class="block text-sm font-medium text-gray-300 mb-1">Channel Name</label>
+        <div class="flex items-center">
+          <span class="text-gray-400 mr-1">#</span>
+          <input
+            type="text"
+            id="channelName"
+            [(ngModel)]="newChannelName"
+            class="w-full border border-gray-600 rounded px-3 py-2 bg-gray-700 text-white"
+            placeholder="general"
+          />
+        </div>
+        <p class="text-xs text-gray-400 mt-1">Only letters, numbers, and dashes are allowed</p>
+      </div>
+
+      <div>
+        <label for="channelDescription" class="block text-sm font-medium text-gray-300 mb-1"
+          >Description (optional)</label
+        >
+        <textarea
+          id="channelDescription"
+          [(ngModel)]="newChannelDescription"
+          class="w-full border border-gray-600 rounded px-3 py-2 bg-gray-700 text-white"
+          placeholder="What's this channel about?"
+          rows="3"
+        ></textarea>
+      </div>
+
+      <div class="flex justify-between mt-6">
+        <button (click)="closeCreateChannelModal()" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500">
+          Cancel
+        </button>
+        <button
+          (click)="createChannel()"
+          class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-500"
+          [disabled]="!newChannelName.trim()"
+        >
+          Create
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+}
+
+<!-- Create guild modal -->
+@if (showCreateGuildModal) {
+<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-gray-800 p-6 rounded-lg w-96">
+    <h2 class="text-xl font-bold text-white mb-4">Create a New Guild</h2>
+
+    <div class="space-y-4">
+      <!-- Guild Image -->
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-2">Guild Image (optional)</label>
+        <div class="flex items-center space-x-4">
+          <div class="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center overflow-hidden">
+            <!-- Show loading spinner when uploading -->
+            <div *ngIf="uploading" class="flex items-center justify-center w-full h-full">
+              <svg
+                class="animate-spin h-8 w-8 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            </div>
+            <!-- Show image preview when available -->
+            <img
+              *ngIf="guildImagePreview && !uploading"
+              [src]="guildImagePreview"
+              alt="Guild image"
+              class="w-full h-full object-cover"
+            />
+            <!-- Show placeholder when no image and not uploading -->
+            <span *ngIf="!guildImagePreview && !uploading" class="text-2xl text-white">{{
+              newGuildName.charAt(0).toUpperCase()
+            }}</span>
+          </div>
+          <div>
+            <label
+              class="px-3 py-2 bg-gray-700 text-white rounded cursor-pointer hover:bg-gray-600"
+              [class.opacity-50]="uploading"
+              [class.cursor-not-allowed]="uploading"
+            >
+              <span>Upload Image</span>
+              <input
+                type="file"
+                class="hidden"
+                accept="image/*"
+                (change)="handleGuildImageSelected($event)"
+                [disabled]="uploading"
+              />
+            </label>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">Recommended: 128x128px or larger square image</p>
+      </div>
+
+      <div>
+        <label for="guildName" class="block text-sm font-medium text-gray-300 mb-1">Guild Name</label>
+        <input
+          type="text"
+          id="guildName"
+          [(ngModel)]="newGuildName"
+          class="w-full border border-gray-600 rounded px-3 py-2 bg-gray-700 text-white"
+          placeholder="My Awesome Guild"
+        />
+      </div>
+
+      <div>
+        <label for="guildDescription" class="block text-sm font-medium text-gray-300 mb-1"
+          >Description (optional)</label
+        >
+        <textarea
+          id="guildDescription"
+          [(ngModel)]="newGuildDescription"
+          class="w-full border border-gray-600 rounded px-3 py-2 bg-gray-700 text-white"
+          placeholder="What's this guild about?"
+          rows="3"
+        ></textarea>
+      </div>
+
+      <div class="flex justify-between mt-6">
+        <button (click)="closeCreateGuildModal()" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500">
+          Cancel
+        </button>
+        <button
+          (click)="createGuild()"
+          class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-500"
+          [disabled]="!newGuildName.trim()"
+        >
+          Create
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+}
+
+<!-- Guild settings modal -->
+@if (showGuildSettingsModal) {
+<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-gray-800 p-6 rounded-lg w-96">
+    <h2 class="text-xl font-bold text-white mb-4">Guild Settings</h2>
+
+    <div class="space-y-4">
+      <!-- Guild Image -->
+      <div>
+        <label class="block text-sm font-medium text-gray-300 mb-2">Guild Image (optional)</label>
+        <div class="flex items-center space-x-4">
+          <div class="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center overflow-hidden">
+            <!-- Show loading spinner when uploading -->
+            <div *ngIf="uploading" class="flex items-center justify-center w-full h-full">
+              <svg
+                class="animate-spin h-8 w-8 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            </div>
+            <!-- Show image preview when available -->
+            <img
+              *ngIf="guildImagePreview && !uploading"
+              [src]="guildImagePreview"
+              alt="Guild image"
+              class="w-full h-full object-cover"
+            />
+            <!-- Show placeholder when no image and not uploading -->
+            <span *ngIf="!guildImagePreview && !uploading" class="text-2xl text-white">{{
+              newGuildName.charAt(0).toUpperCase()
+            }}</span>
+          </div>
+          <div>
+            <label
+              class="px-3 py-2 bg-gray-700 text-white rounded cursor-pointer hover:bg-gray-600"
+              [class.opacity-50]="uploading"
+              [class.cursor-not-allowed]="uploading"
+            >
+              <span>Upload Image</span>
+              <input
+                type="file"
+                class="hidden"
+                accept="image/*"
+                (change)="handleGuildImageSelected($event)"
+                [disabled]="uploading"
+              />
+            </label>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">Recommended: 128x128px or larger square image</p>
+      </div>
+
+      <div>
+        <label for="guildSettingsName" class="block text-sm font-medium text-gray-300 mb-1">Guild Name</label>
+        <input
+          type="text"
+          id="guildSettingsName"
+          [(ngModel)]="newGuildName"
+          class="w-full border border-gray-600 rounded px-3 py-2 bg-gray-700 text-white"
+        />
+      </div>
+
+      <div>
+        <label for="guildSettingsDescription" class="block text-sm font-medium text-gray-300 mb-1"
+          >Description (optional)</label
+        >
+        <textarea
+          id="guildSettingsDescription"
+          [(ngModel)]="newGuildDescription"
+          class="w-full border border-gray-600 rounded px-3 py-2 bg-gray-700 text-white"
+          rows="3"
+        ></textarea>
+      </div>
+
+      <div class="flex justify-between mt-6">
+        <button
+          (click)="deleteGuild()"
+          class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-500"
+          title="Delete this guild"
+        >
+          Delete Guild
+        </button>
+
+        <div class="flex space-x-3">
+          <button
+            (click)="closeGuildSettingsModal()"
+            class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500"
+          >
+            Cancel
+          </button>
+          <button
+            (click)="updateGuild()"
+            class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-500"
+            [disabled]="!newGuildName.trim()"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+}
