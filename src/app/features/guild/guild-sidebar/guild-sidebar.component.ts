@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GuildService, Guild } from '../guild.service';
 import { FormsModule } from '@angular/forms';
@@ -12,7 +12,7 @@ import { ImageCacheService } from '../../shared/image-cache.service';
   templateUrl: './guild-sidebar.component.html',
   styleUrls: ['./guild-sidebar.component.scss'],
 })
-export class GuildSidebarComponent {
+export class GuildSidebarComponent implements OnInit, OnDestroy {
   private guildService = inject(GuildService);
   private imageCache = inject(ImageCacheService);
 
@@ -22,6 +22,24 @@ export class GuildSidebarComponent {
   guildImageFile: File | null = null;
   guildImagePreview: string | null = null;
   uploading = false;
+
+  private focusHandler = () => {
+    // Refresh guild state when window regains focus
+    const currentGuild = this.activeGuild();
+    if (currentGuild) {
+      this.guildService.setActiveGuild(currentGuild);
+    }
+  };
+
+  ngOnInit() {
+    // Add focus event listener
+    window.addEventListener('focus', this.focusHandler);
+  }
+
+  ngOnDestroy() {
+    // Remove focus event listener
+    window.removeEventListener('focus', this.focusHandler);
+  }
 
   get guilds() {
     return this.guildService.guilds;

@@ -166,10 +166,35 @@ export class ProfileComponent {
 
   constructor() {}
 
-  open() {
-    this.isOpen.set(true);
-    this.username = this.user()?.username || '';
-    this.fetchAvatar();
+  async open() {
+    try {
+      // Refresh user data from the server before opening the modal
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session?.user) {
+        // Fetch latest profile data
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', sessionData.session.user.id)
+          .single();
+
+        if (profileData) {
+          // Update auth service with latest user data
+          this.auth.user.update((user) => (user ? { ...user, username: profileData.username } : null));
+        }
+      }
+
+      // Now set the username from the refreshed user state
+      this.username = this.user()?.username || '';
+      this.isOpen.set(true);
+      this.fetchAvatar();
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+      // Still open the modal with existing data if refresh fails
+      this.username = this.user()?.username || '';
+      this.isOpen.set(true);
+      this.fetchAvatar();
+    }
   }
 
   close() {
